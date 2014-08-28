@@ -9,6 +9,16 @@ Glen Gibb, February 2011
 (slight modifications by BL, 5/13)
 
 Modified by Pablo Guevara <pablomguevara@gmail.com>
+
+Script to test mininet topologies with dhcp and nat
+Creates a router for internet access that will forward to eth0
+Starts DHCP server with configuration file on var DHCP_CONF
+DHCP sever is configured to listed on dhcp-eth0 interface
+DHCP subnet is the standar Mininet 10.0.0.0/8, this could be changed
+Default gateway is 10.0.0.254
+The router/root node acting as gateway for hosts also NATs using IP tables
+masquerade
+DNS server is my internal router 192.168.143.254
 """
 
 # DHCP configuration file
@@ -40,7 +50,7 @@ from mininet.log import setLogLevel, info, error
 from mininet.node import RemoteController
 from mininet.net import Mininet
 
-DHCP_CONF='$HOME/sdn-project/mininet-custom-topologies/nat+dhcp.dhcpd.conf'
+DHCP_CONF='$HOME/sdn-project/mininet-custom-topologies/dhcpd-1.conf'
 
 #################################
 def startNAT( root, inetIntf='eth0', subnet='10.0/8' ):
@@ -62,7 +72,7 @@ def startNAT( root, inetIntf='eth0', subnet='10.0/8' ):
     root.cmd( 'iptables -P FORWARD DROP' )
 
     # Configure NAT
-    root.cmd( 'iptables -I FORWARD -i', localIntf, '-d', subnet, '-j DROP' )
+    #root.cmd( 'iptables -I FORWARD -i', localIntf, '-d', subnet, '-j DROP' )
     root.cmd( 'iptables -A FORWARD -i', localIntf, '-s', subnet, '-j ACCEPT' )
     root.cmd( 'iptables -A FORWARD -i', inetIntf, '-d', subnet, '-j ACCEPT' )
     root.cmd( 'iptables -t nat -A POSTROUTING -o ', inetIntf, '-j MASQUERADE' )
@@ -122,54 +132,28 @@ def fixNetworkManager( root, intf ):
         # hopefully this won't disconnect you
         root.cmd( 'service network-manager restart' )
 
-def addDhcp( network, switch='s1', dhcpip='10.253', subnet='10.0/8'):
-    """Add Router
+def addNode( network, nodename, switch='s1', ipaddr='10.254', subnet='10.0/8',
+    inNs=False ):
+    """Add Generic Node
        switch: switch to connect dhcp
-       dhcpip: address for interface in dhcp
-       subnet: Mininet subnet"""
-    
-    # TODO addDhcp and addRoot need to be rewriten as addNode
+       ipaddr: address for interface in dhcp
+       subnet: Mininet subnet
+       inNs: False, the node to be added is on root namespace"""
     
     switch = network.get( switch )
     prefixLen = subnet.split( '/' )[ 1 ]
 
-    # Create a node in dhcp namespace
-    dhcp = Node( 'dhcp', inNamespace=False )
+    # Create a node
+    N = Node( name=nodename, inNamespace=inNs )   
     
-    
-    # Prevent network-manager from interfering with our interface
-    fixNetworkManager( dhcp, 'dhcp-eth0' )
-    # this is not needed because our VM uses Ubuntu server, NM is not installed
+    # Prevent network-manager from interfering with our interface 
+    fixNetworkManager( N, nodename + '-eth0' )
 
     # Create link between dhcp NS and switch
-    link = network.addLink( dhcp, switch )
-    link.intf1.setIP( dhcpip, prefixLen )
+    link = network.addLink( N, switch )
+    link.intf1.setIP( ipaddr, prefixLen )
     
-    return dhcp
-
-def addRoot( network, switch='s1', rootip='10.254', subnet='10.0/8'):
-    """Add Router
-       switch: switch to connect to root namespace
-       rootip: address for interface in root namespace
-       subnet: Mininet subnet"""
-       
-    # TODO addDhcp and addRoot need to be rewriten as addNode
-    
-    switch = network.get( switch )
-    prefixLen = subnet.split( '/' )[ 1 ]
-
-    # Create a node in root namespace
-    root = Node( 'root', inNamespace=False )
-    # this is not needed because our VM uses Ubuntu server, NM is not installed
-    
-    # Prevent network-manager from interfering with our interface
-    fixNetworkManager( root, 'root-eth0' )
-
-    # Create link between root NS and switch
-    link = network.addLink( root, switch )
-    link.intf1.setIP( rootip, prefixLen )
-    
-    return root
+    return N
 
 def connectToInternet( network, root, dhcp ):
     """Connect the network to the internet
@@ -217,10 +201,10 @@ def testNetwork():
     net.start()
     
     # Add Router
-    root = addRoot( net )
+    root = addNode( net, 'root' )
     
     # Add DHCP
-    dhcp = addDhcp( net )
+    dhcp = addNode( net, 'dhcp', ipaddr='10.253' )
     
     # Configure and start NATted connectivity
     connectToInternet( net, root, dhcp )
