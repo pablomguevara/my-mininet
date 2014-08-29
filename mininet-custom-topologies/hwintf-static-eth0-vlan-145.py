@@ -1,7 +1,12 @@
 #!/usr/bin/python
 import re, sys
-""" Adds simple switch topo with 2 hosts
-Static default mininet IPs + VLAN 145 static IP
+
+"""
+
+By Pablo Guevara <pablomguevara@gmail.com>
+
+Script to test mininet topologies with static IP and vlan
+
 """
 
 from mininet.cli import CLI

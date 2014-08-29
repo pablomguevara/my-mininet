@@ -3,6 +3,10 @@
 """
 This example shows how to add an interface (for example a real
 hardware interface) to a network after the network is created.
+
+Modified by pablomguevara@gmail.com
+Added remote controller capability.
+
 """
 
 import re, sys
@@ -13,6 +17,7 @@ from mininet.net import Mininet
 from mininet.link import Intf
 from mininet.topolib import TreeTopo
 from mininet.util import quietRun
+from mininet.node import RemoteController
 
 def checkIntf( intf ):
     "Make sure intf exists and is not configured."
@@ -36,7 +41,8 @@ if __name__ == '__main__':
     checkIntf( intfName )
 
     info( '*** Creating network\n' )
-    net = Mininet( topo=TreeTopo( depth=1, fanout=2 ) )
+    net = Mininet( topo=TreeTopo( depth=1, fanout=2 ),
+        controller=lambda a: RemoteController(a, ip='127.0.0.1', port=6633 ) )
 
     switch = net.switches[ 0 ]
     info( '*** Adding hardware interface', intfName, 'to switch',
@@ -45,7 +51,7 @@ if __name__ == '__main__':
 
     info( '*** Note: you may need to reconfigure the interfaces for '
           'the Mininet hosts:\n', net.hosts, '\n' )
-
+    
     net.start()
     CLI( net )
     net.stop()

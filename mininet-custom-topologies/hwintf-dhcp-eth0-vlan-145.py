@@ -1,4 +1,19 @@
 #!/usr/bin/python
+
+"""
+
+By Pablo Guevara <pablomguevara@gmail.com>
+
+Script to test mininet topologies with dhcp
+If you have a router with DHCP server listening on eth0 you should
+get an ip address. Or you could run a dhcp server listening on eth0.
+
+Note that for some reason, connectivity after DHCP transaction is broken.
+Connectivity on local subnet works, but there is no external world connecti
+vity (for internet access use dhcp.py or nat+dhcp.py)
+
+"""
+
 import re, sys
 
 from mininet.cli import CLI
