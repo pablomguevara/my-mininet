@@ -40,19 +40,23 @@ class SimpleDCTopo(Topo):
         acount = 1
         ecount = 1
         hcount = 1
+        dpcount = 1
 
         # Add CORE
-        core = self.addSwitch('c1')
+        core = self.addSwitch('c1', dpid=( "%016x" % dpcount ))
+        dpcount += 1
 
         # Add Agreggation
         for i in irange(1, fanout):
             aname = ('a%s' % str(acount))
-            AggSwitch = self.addSwitch(name=aname)
+            AggSwitch = self.addSwitch(name=aname, dpid=( "%016x" % dpcount ))
+            dpcount += 1
             self.addLink(core, AggSwitch, **linkopts1)
             acount += 1
             for j in irange(1, fanout):
                 ename = ('e%s' % str(ecount))
-                EdgeSwitch = self.addSwitch(name=ename)
+                EdgeSwitch = self.addSwitch(name=ename, dpid=( "%016x" % dpcount ))
+                dpcount += 1
                 self.addLink(AggSwitch, EdgeSwitch, **linkopts2)
                 ecount += 1
                 for k in irange(1, fanout):

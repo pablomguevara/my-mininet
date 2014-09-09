@@ -64,17 +64,26 @@ class SimpleISPTopo(Topo):
         baseMac2 = '00:00:02:00:00:'
         baseMac3 = '00:00:03:00:00:'
         
+        # Aux var to count DPID
+        dpcount = 1
+ 
         # Add CORE
-        core = self.addSwitch('c1')
+        info( '\n*** Adding Core switch\n' )
+        core = self.addSwitch('c1', dpid=( "%016x" % dpcount ))
+        dpcount += 1
 
         # Add Agreggation
-        a1 = self.addSwitch('a1')
+        info( '\n*** Adding aggregation switches\n' )
+        a1 = self.addSwitch('a1', dpid=( "%016x" % dpcount ))
+        dpcount += 1
         self.addLink(core, a1, **linkopts2)
-        a2 = self.addSwitch('a2')
+        a2 = self.addSwitch('a2', dpid=( "%016x" % dpcount ))
+        dpcount += 1
         self.addLink(core, a2, **linkopts2)
-        a3 = self.addSwitch('a3')
+        a3 = self.addSwitch('a3', dpid=( "%016x" % dpcount ))
+        dpcount += 1
         self.addLink(core, a3, **linkopts2)
-
+        
         for h in irange(1, hosts):
             hmac1 = baseMac1 + format(h, 'x')
             hmac2 = baseMac2 + format(h, 'x')

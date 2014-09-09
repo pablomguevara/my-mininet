@@ -98,12 +98,14 @@ def main(argv):
         exit(errno.EINVAL)
     
     if args.CustomTopo == 'SISP' :
-        topo = SimpleISPTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts)
+        topo = SimpleISPTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
+               waitConnected=True)
     elif args.CustomTopo == 'SISPVlan' :
         topo = SimpleVlanISPTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
-               vid=args.vid, cos=args.cos)
+               vid=args.vid, cos=args.cos, waitConnected=True)
     elif args.CustomTopo == 'SDC' :
-        topo = SimpleDCTopo(linkopts1, linkopts2, linkopts3, fanout=args.fanout)
+        topo = SimpleDCTopo(linkopts1, linkopts2, linkopts3, fanout=args.fanout,
+               waitConnected=True)
     
     if args.remote :
         net = Mininet(topo=topo,

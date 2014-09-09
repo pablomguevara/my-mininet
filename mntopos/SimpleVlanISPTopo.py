@@ -72,18 +72,28 @@ class SimpleVlanISPTopo(Topo):
         baseMac2 = '00:00:02:00:00:'
         baseMac3 = '00:00:03:00:00:'
         
+        # Aux var to count DPID
+        dpcount = 1
+ 
         # Add CORE
-        core = self.addSwitch('c1')
+        info( '\n*** Adding Core switch\n' )
+        core = self.addSwitch('c1', dpid=( "%016x" % dpcount ))
+        dpcount += 1
 
         # Add Agreggation
-        a1 = self.addSwitch('a1')
+        info( '\n*** Adding aggregation switches\n' )
+        a1 = self.addSwitch('a1', dpid=( "%016x" % dpcount ))
+        dpcount += 1
         self.addLink(core, a1, **linkopts2)
-        a2 = self.addSwitch('a2')
+        a2 = self.addSwitch('a2', dpid=( "%016x" % dpcount ))
+        dpcount += 1
         self.addLink(core, a2, **linkopts2)
-        a3 = self.addSwitch('a3')
+        a3 = self.addSwitch('a3', dpid=( "%016x" % dpcount ))
+        dpcount += 1
         self.addLink(core, a3, **linkopts2)
         
         # no vlan hosts
+        info( '\n*** Adding hosts without VLAN\n' )
         novlan1 = self.addHost(name='nv1', mac='00:00:01:11:11:11',
                               ip='10.11.11.11')
         novlan2 = self.addHost(name='nv2', mac='00:00:02:22:22:22',
@@ -95,7 +105,7 @@ class SimpleVlanISPTopo(Topo):
         self.addLink(a3, novlan3, **linkopts3)
             
                
-
+        info( '\n*** Adding VLAN hosts\n' )
         for h in irange(1, hosts):
             hmac1 = baseMac1 + format(h, 'x')
             hmac2 = baseMac2 + format(h, 'x')
@@ -109,4 +119,4 @@ class SimpleVlanISPTopo(Topo):
             self.addLink(a1, host1, **linkopts3)
             self.addLink(a2, host2, **linkopts3)
             self.addLink(a3, host3, **linkopts3)
-            
+             
