@@ -1,0 +1,11 @@
+Archivos:
+
+hwintf-dhcp-eth0-novlan.py
+hwintf-dhcp-eth0-novlan-rootns.py
+hwintf-dhcp-eth0-vlan-145.py
+hwintf-eth0-vlan-145-146.py
+hwintf-static-eth0-vlan-10-2.py
+hwintf-static-eth0-vlan-10.py
+hwintf-static-eth0-vlan-145.py
+
+Estos archivos estan bajo prueba por que no operan de forma correcta pero necesitan mas investigacion. Todos estan basados en el hwintf.py que esta en el repositorio de mininet.

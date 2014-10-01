@@ -1,8 +1,15 @@
-Por ahora solo usen estos archivos:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TOPOLOGIAS PROYECTO ARGENTA NETWORKS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 SimpleDCTopo.py
-~~~~~~~~~~~~~~~
-Topologia basica de data center con depth fijo en 3. Es un caso de la topologia Tree que se puede usar tambien. El agrumento de entrada es fanout, la cantidad de dispositivos conectados a cada nodo. Si no se especifica, fanout es 2. Esta seria la topologia con fanout 2:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Topologia basica de data center con depth fijo en 3. Es un caso de la topologia
+Tree que se puede usar tambien. El agrumento de entrada es fanout, la cantidad
+ de dispositivos conectados a cada nodo. Si no se especifica, fanout es 2.
+
+Esta seria la topologia con fanout 2:
 
                              c0
                   ___________|__________
@@ -15,13 +22,17 @@ Topologia basica de data center con depth fijo en 3. Es un caso de la topologia 
        |       |   |       |  |       |   |       |
        h1      h2  h3      h4 h5      h6  h7      h8
 
-Esta topologia no soporta VLANS.
+Esta topologia esta incompleta por el momento. No cuenta con la logica para 
+soporte de VLAN, router, DHCP, etc. Esto es trabajo pendiente.
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 SimpleISPTopo.py
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 La topologia simple de ISP:
 
-                           c0
+                          gw    dhcp
+                           |     | 
+                           c0____|
                   _________|________
                  |         |        |
                  a1       a2       a3
@@ -30,119 +41,42 @@ La topologia simple de ISP:
                  |                  |
                h1--hN         h2N+1 -- h3N
 
-Proximos pasos: agregar router y dhcp. Por ahora se prueba con IP fija. Esta topologia no tiene VLANs.
+gw   - router implementado con iptables y sysctl de Linux
+dhcp - dhcp server implementado con isc-dhcp-server (es necesario instalar el
+       server en la maquina virtual "sudo apt-get install isc-dhcp-server).
 
-SimpleVlanISPTopo.py
-~~~~~~~~~~~~~~~~~~~~
-Idem anterior, pero con VLANs. Agrega por defecto 2 hosts por switch en la VLAN que se especifica (si no se especifica usa vlan 10) y un host extra en cada switch de agregacion sin VLAN para probar si las VLANs estan aisladas.
+Esta topologia cuenta con la logica para agregar VLANs a los hosts conectados a
+los switches. Al parecer openvswitch implementa la aislacion de vlans por 
+defecto ya que los hosts en diferente vlan no tienen conectividad. Esta es la
+topologia principal.
 
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 TestTopo.py
-~~~~~~~~~~
-Este script es el que se debe usar para probar las nuevas topologias con VALN.
--h/--help les da la ayuda necesaria para usarlo.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Este es el wrapper script que se usa para invocar las topologias listadas arriva
+(SimpleISPTopo.py y SimpleDCTopo.py). Las opciones -h/--help les da la ayuda
+necesaria para usarlo.
 
-NOTA: simple_switch.py y otras rutinas de controlador parecen tener problemas con las topologias que estoy creado, si prueban con el controlador interno funciona bien, esto es por que simple_switch.py agrega flujos que no son los correctos para la aplicacion. Hay que comenzar a escribir nuestra logica para probar bien.
+Ejemplo:
 
-vlanhost.py
-~~~~~~~~~~
-En las versiones mas recientes de mininet aparecio este script, que resulta muy util ya que cuenta con constructores para hostAdd con VLAN. Es parecido a lo que yo venia usando, pero esta mas prolijo. De este archivo se usa el consturctor VLANHost
+1) El controlador externo, ejemplo con Ryu
+$ ryu-manager --verbose ~/ryu/ryu/app/simple_switch.py
 
-nat.py
-~~~~~~
+2) La topologia:
+$ sudo python ./TestTopo.py --topo SISP --remote --vlanid 1500 --vlancos 5 
+--dhcp --nat
 
-Es la version original en la cual me base, parte de los ejemplos de mininet
- (mininet/examples). Asume que la VM usa eth0 para salir a internet. De aca
-saque la idea de crear un host en el namespace de root.
+En este caso iniciamos la topologia de ISP con controlador remoto (ip 127.0.0.1
+puerto 6633), vlan 1500, cos 5, con dhcp y nat activados.
 
-Para ejecutar simplemente ejecutar como un script python, ya que usa mininet
-con el controller integrado:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Constructores
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Los archivos siguientes son los constructores que permiten crear router, dhcp y
+host customizado de acuerdo a nuestras necesitades:
 
-sudo python ~/sdn-project/mininet-custom-topologies/nat.py
-
-Para verificar internet en un host, h1 por ejemplo:
-
-xterm h1 (abre consola)
-nslookup www.google.com
-ping www.google.com
-lynx www.google.com (si no tienen lynx: sudo apt-get install lynx)
-
-nat+dhcp.py
-~~~~~~~~~~~
-
-Basado en nat.py, este script agrega soporte para dhcp. Lo que hago es crear un
-segundo host en el namespace de root. Si quieren ver que es un namespace esto 
-lo explica en forma simple:
-
-http://blog.scottlowe.org/2013/09/04/introducing-linux-network-namespaces/
-
-El segundo host, al que llamo dhcp, ejecuta el proceso dhcp. Tecnicamente,
-podria hacer todo en el mismo host, pero de esta forma es mas claro.
-
-Al igual que nat.py, asume que la VM usa eth0 para acceder a internet. El
-script inicia el servidor DHCP y carga la config (dhcpd-1.conf). Lo unico que
-tienen que hacer antes es instalar el dhcp server:
-
-sudo apt-get install isc-dhcp-server
-
-Para ejecutar:
-1) iniciar un controlador(solo 1!):
-Ryu: ryu-manager --verbose ryu/ryu/app/simple_switch.py
-Pyretic: pyretic.py -m p0 pyretic.modules.mac_learner
-2) ejecutar el script de topologia:
-sudo python ~/sdn-project/mininet-custom-topologies/nat+dhcp.py 
-
-dhcp.py
-~~~~~~~
-
-Similar a nat+dhcp.py, pero sin NAT. Las conexiones son ruteadas hacia internet
-Requiere que el router de salida conozca la red 10.0.0.0/8 y tenga una ruta 
-estatica para aclanzar dicha red.
-
-Para ejecutar:
-1) iniciar un controlador(solo 1!):
-Ryu: ryu-manager --verbose ryu/ryu/app/simple_switch.py
-Pyretic: pyretic.py -m p0 pyretic.modules.mac_learner
-2) ejecutar el script de topologia:
-sudo python ~/sdn-project/mininet-custom-topologies/dhcp.py
-
-hwintf.py
-~~~~~~~~~
-Basado en el ejemplo con el mismo nombre de mininet/examples. Este escript arma
-una topologia basica con 1 switch 2 hosts, agrega al switch la interface que
-uno especifique como argumento al script (la interface no debe tener ip).
-
-Funciona, pero no logro conectividad con el mundo exterior. Ping desde un host
-en mininet a un dispositivo fuera del sistema operativo host no funciona.
-Conectividad entre hosts de mininet, os guest y os host funcionan bien.
-
-La unica modificacion que agregue es para que el controlador sea externo en la 
-VM local.
-
-Para ejecutar:
-1) iniciar un controlador(solo 1!):
-Ryu: ryu-manager --verbose ryu/ryu/app/simple_switch.py
-Pyretic: pyretic.py -m p0 pyretic.modules.mac_learner
-2) ejecutar el script de topologia:
-sudo python ~/sdn-project/mininet-custom-topologies/hwintf.py eht0
-
-(o la interface que usen, eth1, wlan0, etc.)
-
-hwintf-dhcp-eth0-novlan.py
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-Idem hwintf.py pero no toma interface como argumento sino que esta fija y es 
-eth0. Ademas, los hosts h1 y h2 intentan tomar direccion IP en forma dinamica.
-
-Me pasa algo raro: los hosts toman IP de mi router (fuera de mi PC host), pero
-luego no tienen conectividad con internet. Ping desde un host 
-en mininet a un dispositivo fuera del sistema operativo host no funciona.
-Conectividad entre hosts de mininet, os guest y os host funcionan bien.
-
-Para ejecutar:
-1) iniciar un controlador(solo 1!):
-Ryu: ryu-manager --verbose ryu/ryu/app/simple_switch.py
-Pyretic: pyretic.py -m p0 pyretic.modules.mac_learner
-2) ejecutar el script de topologia:
-sudo python ~/sdn-project/mininet-custom-topologies/hwintf-dhcp-eth0-novlan.py
+dhcpctor.py
+hostctor.py
+routerctor.py
 
 

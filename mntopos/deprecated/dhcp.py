@@ -49,7 +49,7 @@ from mininet.log import setLogLevel, info, error
 from mininet.node import RemoteController
 from mininet.net import Mininet
 
-DHCP_CONF='$HOME/sdn-project/mininet-custom-topologies/dhcpd-1.conf'
+DHCP_CONF='$HOME/sdn-project/mntopos/dhcpd-1.conf'
 
 #################################
 def startRouter( root, inetIntf='eth0', subnet='10.0/8' ):

@@ -12,6 +12,9 @@ Note that for some reason, connectivity after DHCP transaction is broken.
 Connectivity on local subnet works, but there is no external world connecti
 vity (for internet access use dhcp.py or nat+dhcp.py)
 
+Updated Note: I see DHCPOFFER go out h1-eth0, but nothing is geting
+to eth0, this script is not working.
+
 """
 
 import re, sys

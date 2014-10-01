@@ -13,20 +13,25 @@ from mininet.node import RemoteController
 
 from SimpleDCTopo import *
 from SimpleISPTopo import *
-from SimpleVlanISPTopo import *
 
 import sys
 import getopt
 import argparse
 import errno
 
-#linkopts1 = {'bw':50, 'delay':'5ms'}
-#linkopts2 = {'bw':30, 'delay':'10ms'}
-#linkopts3 = {'bw':10, 'delay':'15ms'}
+linkopts1 = {'bw':1000, 'delay':'1ms'}
+linkopts2 = {'bw':1000, 'delay':'1ms'}
+linkopts3 = {'bw':100, 'delay':'10ms'}
 
-linkopts1 = {}
-linkopts2 = {}
-linkopts3 = {}
+#linkopts1 = {}
+#linkopts2 = {}
+#linkopts3 = {}
+
+#TODO
+# - cos implementation
+# - quagga implementation (routerctor.py)
+# - Data Center topo with vlan support and all
+
 
 def main(argv):
     '''
@@ -36,20 +41,26 @@ def main(argv):
     remote use remote controller
     ip remote controller ip
     port remote controller tcp port
-    vid for VLAN topologies, VLAN VID
-    cos for VLAN topologies, VLAN COS
+    vlanid for VLAN topologies, VLAN VID
+    vlancos for VLAN topologies, VLAN COS
     fanout for Data Center Topologies, tree fanout
     hosts for ISP Topologies, hosts per aggregation switch
     CustomTopo select topology to test
     '''
     
-    parser = argparse.ArgumentParser(description="Simple script to initiate " +
+    parser = argparse.ArgumentParser(description="Wrapper script to initiate " +
                         "Mininet Topologies", add_help=True,
-                        epilog="VLANs are supported with topology SISPVlan" +
+                        epilog="VLANs are supported with topology SISP" +
                         " only. Other topologies will just ignore the setting" +
                         " and will not output any error message.")
     parser.add_argument("--remote",
                         help="Specify a remote controller",
+                        action="store_true")
+    parser.add_argument("--dhcp",
+                        help="Use DHCP Server instead of static ip assignment",
+                        action="store_true")
+    parser.add_argument("--nat",
+                        help="Configure Gateway router to use NATr",
                         action="store_true")
     controllerGroup = parser.add_argument_group('controllerGroup',
                         'Arguments for remote controller')
@@ -62,14 +73,14 @@ def main(argv):
                         default=6633)
     vlanGroup = parser.add_argument_group('VlanGroup',
                         'Vlan related arguments')
-    vlanGroup.add_argument("--vid",
+    vlanGroup.add_argument("--vlanid",
                         type=int,
                         help="VID value for VLAN Tag (allowed values 2-4096)",
                         #choices=irange(2, 4096),
                         # dont use choises looks bad
                         # validate somewhere else
-                        default=10)
-    vlanGroup.add_argument("--cos",
+                        default=0)
+    vlanGroup.add_argument("--vlancos",
                         type=int,
                         help="COS value for VLAN Tag",
                         choices=irange(0, 7),
@@ -84,28 +95,27 @@ def main(argv):
                         help="Number of hosts per aggregation switch for" +
                         " ISP-like topologies",
                         default=2)
-    parser.add_argument("--CustomTopo",
+    parser.add_argument("--topo",
                         type=str,
                         help="Custom topology to use",
-                        choices=['SISP', 'SISPVlan', 'SDC'],
+                        choices=['SISP', 'SDC'],
                         default='SISP')
     args = parser.parse_args()
     
     # Validate VLAN Vid
-    if args.vid < 2 or args.vid > 4096 :
-        print "Allowed VID range is 2 - 4096"
+    if args.vlanid > 4096 :
+        print "Allowed VID range is 1 - 4096 (vlan 0 is no vlan)"
         parser.print_help()
         exit(errno.EINVAL)
     
-    if args.CustomTopo == 'SISP' :
+    if args.topo == 'SISP' :
         topo = SimpleISPTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
-               waitConnected=True)
-    elif args.CustomTopo == 'SISPVlan' :
-        topo = SimpleVlanISPTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
-               vid=args.vid, cos=args.cos, waitConnected=True)
-    elif args.CustomTopo == 'SDC' :
+               vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
+               nat=args.nat, waitConnected=True)
+    elif args.topo == 'SDC' :
         topo = SimpleDCTopo(linkopts1, linkopts2, linkopts3, fanout=args.fanout,
-               waitConnected=True)
+               vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
+               nat=args.nat, waitConnected=True)
     
     if args.remote :
         net = Mininet(topo=topo,
@@ -121,5 +131,5 @@ def main(argv):
     net.stop()
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
-   
+    main(sys.argv[1:])
+    

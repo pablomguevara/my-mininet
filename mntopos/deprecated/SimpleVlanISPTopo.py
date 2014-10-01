@@ -11,7 +11,8 @@ from mininet.link import TCLink
 from mininet.log import setLogLevel, info, debug
 from mininet.net import Mininet
 from mininet.cli import CLI
-from vlanhost import VLANHost
+from hostctor import hostCtor
+from routerctor import routerCtor
 
 class SimpleVlanISPTopo(Topo):
 
@@ -20,11 +21,11 @@ class SimpleVlanISPTopo(Topo):
     linkopts = 1:core, 2:aggregation, 3: edge
     hosts - number of hosts per aggregation switch
         
-    1 core router TODO
+    1 core router = gw
     1 core switch
     2 aggregation switches
-    1 no vlan host connected to each aggregation switch, this is to test vlan
-    isolation
+    1 no vlan (nv*) host connected to each aggregation switch, this is to test
+    vlan isolation
     
     Max hosts per aggregation switch = 255 because we use the las 2 HEX digits
     of MAC address for easy debug.
@@ -52,7 +53,11 @@ class SimpleVlanISPTopo(Topo):
         linkopts2 - link options between aggregation and core switch
         linkopts3 - link options between aggregation and hosts
         hosts - numer of hosts per switch between 1 and 255
-                                  
+        vid: vlan id, if 0 means no vlan
+        cos: vlan cos, TODO
+                
+                           gw
+                           |                          
                            c0
                   _________|________
                  |         |        |
@@ -72,6 +77,9 @@ class SimpleVlanISPTopo(Topo):
         baseMac2 = '00:00:02:00:00:'
         baseMac3 = '00:00:03:00:00:'
         
+        # Core Router Mininet facing IP address
+        gwIp='10.0.0.1'
+        
         # Aux var to count DPID
         dpcount = 1
  
@@ -79,6 +87,12 @@ class SimpleVlanISPTopo(Topo):
         info( '\n*** Adding Core switch\n' )
         core = self.addSwitch('c1', dpid=( "%016x" % dpcount ))
         dpcount += 1
+
+        # Add gateway
+        info( '\n*** Adding gateway node\n' )
+        gw = self.addHost(name='gw', cls=routerCtor, inNamespace=False, 
+            ip=gwIp, vid=vid )
+        self.addLink(core, gw, **linkopts1)
 
         # Add Agreggation
         info( '\n*** Adding aggregation switches\n' )
@@ -106,16 +120,16 @@ class SimpleVlanISPTopo(Topo):
             
                
         info( '\n*** Adding VLAN hosts\n' )
-        for h in irange(1, hosts):
+        for h in irange(2, hosts+1):
             hmac1 = baseMac1 + format(h, 'x')
             hmac2 = baseMac2 + format(h, 'x')
             hmac3 = baseMac3 + format(h, 'x')
             hname1 = 'h%s' % str(h)
             hname2 = 'h%s' % str(hosts + h)
             hname3 = 'h%s' % str(hosts * 2 + h)
-            host1 = self.addHost(name=hname1, mac=hmac1, cls=VLANHost, vlan=vid)
-            host2 = self.addHost(name=hname2, mac=hmac2, cls=VLANHost, vlan=vid)
-            host3 = self.addHost(name=hname3, mac=hmac3, cls=VLANHost, vlan=vid)
+            host1 = self.addHost(name=hname1, mac=hmac1, cls=hostCtor, vid=vid)
+            host2 = self.addHost(name=hname2, mac=hmac2, cls=hostCtor, vid=vid)
+            host3 = self.addHost(name=hname3, mac=hmac3, cls=hostCtor, vid=vid)
             self.addLink(a1, host1, **linkopts3)
             self.addLink(a2, host2, **linkopts3)
             self.addLink(a3, host3, **linkopts3)

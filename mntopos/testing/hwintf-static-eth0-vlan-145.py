@@ -68,7 +68,10 @@ def fixNetworkManager( root, intf ):
 
 def testNetwork():
   info( '*** Creating network\n' )
-  net = Mininet( controller=lambda a: RemoteController(a, ip='127.0.0.1', port=6633))
+  #net = Mininet( controller=lambda a: RemoteController(a, ip='127.0.0.1', port=6633))
+  
+  net = Mininet(topo=None,build = False )
+
   net.addController('c0')
   
   # add switch

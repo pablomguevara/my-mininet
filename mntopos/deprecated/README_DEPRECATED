@@ -1,0 +1,72 @@
+Archivos:
+dhcp.py
+nat+dhcp.py
+nat.py
+SimpleVlanISPTopo.py
+
+SimpleVlanISPTopo.py
+~~~~~~~~~~~~~~~~~~~~
+Esta topologia ya no debe utilizarce, queda reemplazada por SimpleISPTopo.py. Al especificar "vlanid=0" la topologia no tiene vlan, cual quier otro valor entre 2 y 4090 configura los hosts con la vlan correspondiente.
+
+nat.py
+~~~~~~
+
+Es la version original en la cual me base, parte de los ejemplos de mininet
+ (mininet/examples). Asume que la VM usa eth0 para salir a internet. De aca
+saque la idea de crear un host en el namespace de root.
+
+Para ejecutar simplemente ejecutar como un script python, ya que usa mininet
+con el controller integrado:
+
+sudo python ~/sdn-project/mininet-custom-topologies/nat.py
+
+Para verificar internet en un host, h1 por ejemplo:
+
+xterm h1 (abre consola)
+nslookup www.google.com
+ping www.google.com 
+lynx www.google.com (si no tienen lynx: sudo apt-get install lynx)
+
+nat+dhcp.py
+~~~~~~~~~~~
+
+Basado en nat.py, este script agrega soporte para dhcp. Lo que hago es crear un
+segundo host en el namespace de root. Si quieren ver que es un namespace esto
+lo explica en forma simple:
+
+http://blog.scottlowe.org/2013/09/04/introducing-linux-network-namespaces/
+
+El segundo host, al que llamo dhcp, ejecuta el proceso dhcp. Tecnicamente,
+podria hacer todo en el mismo host, pero de esta forma es mas claro.
+
+Al igual que nat.py, asume que la VM usa eth0 para acceder a internet. El
+script inicia el servidor DHCP y carga la config (dhcpd-1.conf). Lo unico que
+tienen que hacer antes es instalar el dhcp server:
+
+sudo apt-get install isc-dhcp-server
+
+Para ejecutar:
+1) iniciar un controlador(solo 1!):
+Ryu: ryu-manager --verbose ryu/ryu/app/simple_switch.py
+Pyretic: pyretic.py -m p0 pyretic.modules.mac_learner
+2) ejecutar el script de topologia:
+sudo python ~/sdn-project/mininet-custom-topologies/nat+dhcp.py
+
+dhcp.py
+~~~~~~~
+
+Similar a nat+dhcp.py, pero sin NAT. Las conexiones son ruteadas hacia internet
+Requiere que el router de salida conozca la red 10.0.0.0/8 y tenga una ruta
+estatica para aclanzar dicha red.
+
+Para ejecutar:
+1) iniciar un controlador(solo 1!):
+Ryu: ryu-manager --verbose ryu/ryu/app/simple_switch.py
+Pyretic: pyretic.py -m p0 pyretic.modules.mac_learner
+2) ejecutar el script de topologia:
+sudo python ~/sdn-project/mininet-custom-topologies/dhcp.py
+
+
+
+
+

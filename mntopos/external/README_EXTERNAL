@@ -1,0 +1,56 @@
+Archivos:
+
+hwintf.py
+iris_custom_topology_local_controller.py
+iris_custom_topology.py
+spanning_tree.py
+spanning_tree_remote.py
+vlanhost.py
+
+La mayoria de estos archivos fueron utilizados para el desarrollo de los scripts actuales. Quedan en esta carpeta como referencia.
+
+vlanhost.py
+~~~~~~~~~~
+En las versiones mas recientes de mininet aparecio este script, que resulta muy util ya que cuenta con constructores para hostAdd con VLAN. Es parecido a lo que yo venia usando, pero esta mas prolijo. De este archivo se usa el consturctor VLANHost.
+
+Este archivo ya no es utilizado, ha sido movido a "external".
+
+hwintf.py (movido a "external")
+~~~~~~~~~
+Basado en el ejemplo con el mismo nombre de mininet/examples. Este escript arma
+una topologia basica con 1 switch 2 hosts, agrega al switch la interface que
+uno especifique como argumento al script (la interface no debe tener ip).
+
+Funciona, pero no logro conectividad con el mundo exterior. Ping desde un host
+en mininet a un dispositivo fuera del sistema operativo host no funciona.
+Conectividad entre hosts de mininet, os guest y os host funcionan bien.
+
+La unica modificacion que agregue es para que el controlador sea externo en la
+VM local.
+
+Para ejecutar:
+1) iniciar un controlador(solo 1!):
+Ryu: ryu-manager --verbose ryu/ryu/app/simple_switch.py
+Pyretic: pyretic.py -m p0 pyretic.modules.mac_learner
+2) ejecutar el script de topologia:
+sudo python ~/sdn-project/mininet-custom-topologies/hwintf.py eht0
+
+(o la interface que usen, eth1, wlan0, etc.)
+
+spanning_tree.py
+~~~~~~~~~~~~~~~~
+Topologia para pruebas con spanning tree.
+
+spanning_tree_remote.py
+~~~~~~~~~~~~~~~~~~~~~~~
+Topologia para pruebas con spanning tree utilizando controlador externo.
+
+iris_custom_topology_local_controller.py
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Topologia con loops del proyecto IRIS.
+
+iris_custom_topology.py
+~~~~~~~~~~~~~~~~~~~~~~~
+Topologia con loops del proyecto IRIS utilizando controlador externo.
+
+
