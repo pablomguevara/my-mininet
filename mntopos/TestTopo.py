@@ -60,7 +60,7 @@ def main(argv):
                         help="Use DHCP Server instead of static ip assignment",
                         action="store_true")
     parser.add_argument("--nat",
-                        help="Configure Gateway router to use NATr",
+                        help="Configure Gateway router to use NAT",
                         action="store_true")
     controllerGroup = parser.add_argument_group('controllerGroup',
                         'Arguments for remote controller')
