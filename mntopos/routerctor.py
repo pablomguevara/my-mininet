@@ -19,12 +19,14 @@ from mininet.log import lg, setLogLevel, info, debug
 from mininet.node import Node
 from mininet.node import Host
 
+DHCP_CONF='$HOME/sdn-project/mininet-custom-topologies/dhcpd-1.conf'
+
 class routerCtor( Host ):
     
-    setLogLevel('info')
-    
+    #setLogLevel('info')
+     
     def config( self, nat=False, inetIntf='eth0', subnet='10.0/8',
-        quagga=False, vlanid=0, vlancos=0, **params ):
+        quagga=False, vlanid=0, vlancos=0, dhcp=False, **params ):
         
         """
         Configure Start Router implemented with iptables forwarding between 
@@ -35,6 +37,7 @@ class routerCtor( Host ):
         subnet: Mininet subnet (default 10.0/8)
         quagga: if true, use quagga
         vlanid: vlanid configuration for Mininet facing interface (0 is no vlanid)
+        dhcp: False, no DHCP; True, add dhcp server on the same node
         """
         
         info('*** routerCtor VLAN %s\n' % vlanid)
@@ -90,6 +93,19 @@ class routerCtor( Host ):
             #TODO
             info( '*** Quagga router not implemented yet\n' )
         
+        if dhcp :
+            # Set config and Start DHCP Server process
+            # Kill any running DHCP
+            self.cmd( 'kill $(echo $(cat /var/run/dhcpd.pid))' )
+            # Deploy the right DHCP configuration for the example
+            self.cmd( 'cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf.bak' )
+            self.cmd( 'cp ', DHCP_CONF, '/etc/dhcp/dhcpd.conf' )
+            # Configure interface to listen DHCP
+            self.cmd( 'cp /etc/default/isc-dhcp-server /etc/default/isc-dhcp-server.bak' )
+            self.cmd( 'echo "INTERFACES=\"%s\"" > /etc/default/isc-dhcp-server' % localIntf )
+            # Start DHCP
+            self.cmd( 'dhcpd &' )
+
         return root
 
     def terminate( self ):
@@ -105,7 +121,16 @@ class routerCtor( Host ):
 
         # Instruct the kernel to stop forwarding
         self.cmd( 'sysctl net.ipv4.ip_forward=0' )
-
+        
+        # TODO there should be a way to kill dhcp only if it has been started
+        # Terminate DHCP
+        # Stop DHCP
+        self.cmd( 'kill $(echo $(cat /var/run/dhcpd.pid))' )
+        
+        # Restore files
+        self.cmd('cp /etc/dhcp/dhcpd.conf.bak /etc/dhcp/dhcpd.conf')
+        self.cmd('cp /etc/default/isc-dhcp-server.bak /etc/default/isc-dhcp-server') 
+        
         # Terminate
         super( Host, self ).terminate()
 

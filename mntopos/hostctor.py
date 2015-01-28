@@ -51,6 +51,8 @@ class hostCtor( Host ):
                 # Add default gateway
                 self.cmd( 'route add -net 0 gw %s' % gwIp )
             else :
+                # remove IP from default, "physical" interface
+                self.cmd( 'ifconfig %s inet 0' % localIntf )
                 # initiate dhcp client
                 self.cmd( 'dhclient %s &' % ( localIntf ) )
         
@@ -70,6 +72,8 @@ class hostCtor( Host ):
                 # Add default gateway
                 self.cmd( 'route add -net 0 gw %s' % gwIp )
             else :
+                # remove IP from default, "physical" interface
+                self.cmd( 'ifconfig %s inet 0' % localIntf )
                 # initiate dhcp client
                 self.cmd( 'dhclient %s.%d &' % ( localIntf, vlanid ) )
             

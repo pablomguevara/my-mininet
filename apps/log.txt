@@ -1,0 +1,16 @@
+Switch Connection
+Data Path ID 1
+[]
+Print links for c1
+Switch Connection
+Data Path ID 3
+[]
+Print links for c1
+Switch Connection
+Data Path ID 4
+[{'src': {'hw_addr': '76:54:e6:e7:7f:00', 'name': 'a1-eth1', 'port_no': '00000001', 'dpid': '0000000000000002'}, 'dst': {'hw_addr': 'e6:54:c9:c8:25:76', 'name': 'c1-eth3', 'port_no': '00000003', 'dpid': '0000000000000001'}}, {'src': {'hw_addr': 'd6:45:37:90:ed:76', 'name': 'a2-eth1', 'port_no': '00000001', 'dpid': '0000000000000003'}, 'dst': {'hw_addr': '2e:d2:a4:c9:77:79', 'name': 'c1-eth4', 'port_no': '00000004', 'dpid': '0000000000000001'}}]
+Print links for c1
+Switch Connection
+Data Path ID 2
+[{'src': {'hw_addr': '76:54:e6:e7:7f:00', 'name': 'a1-eth1', 'port_no': '00000001', 'dpid': '0000000000000002'}, 'dst': {'hw_addr': 'e6:54:c9:c8:25:76', 'name': 'c1-eth3', 'port_no': '00000003', 'dpid': '0000000000000001'}}, {'src': {'hw_addr': 'e2:a3:8a:ac:4c:48', 'name': 'a3-eth1', 'port_no': '00000001', 'dpid': '0000000000000004'}, 'dst': {'hw_addr': '3e:32:68:07:ec:00', 'name': 'c1-eth5', 'port_no': '00000005', 'dpid': '0000000000000001'}}, {'src': {'hw_addr': 'd6:45:37:90:ed:76', 'name': 'a2-eth1', 'port_no': '00000001', 'dpid': '0000000000000003'}, 'dst': {'hw_addr': '2e:d2:a4:c9:77:79', 'name': 'c1-eth4', 'port_no': '00000004', 'dpid': '0000000000000001'}}]
+Print links for c1

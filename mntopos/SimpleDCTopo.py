@@ -26,7 +26,8 @@ class SimpleDCTopo(Topo):
     each link.
     """
     
-    setLogLevel('info')
+    #setLogLevel('info')
+    setLogLevel('debug')
     
     def __init__(self, linkopts1={}, linkopts2={}, linkopts3={}, fanout=2, **opts):
 

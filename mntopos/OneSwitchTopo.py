@@ -17,25 +17,27 @@ from routerctor import routerCtor
 from hostctor import hostCtor
 from dhcpctor import dhcpCtor
 
-class SimpleISPTopo(Topo):
+class OneSwitchTopo(Topo):
 
-    """ Simple ISP Topology
+    """ Simple Topology with One switch only
+
+    This is the equivalent of standard mn "single", but with router, dhcp
+    and custom constructors.
 
     linkopts = 1:core, 2:aggregation, 3: edge
-    fanout - number of child switch per parent switch
+    hosts - number of hosts on the switch
     
-    1 core router = gw
-    1 dhcp server
+    1 core router that optionaly acts as dhcp server
     1 core switch
-    3 aggregation switches
+    N hosts
     
     The core router, the gw uses ip 10.0.0.1.
     The current implementation let's Mininet assign the gw router ip
     automatically because gw is a host on root namespace. This is the first
     host. All other hosts, from 2 to N, should have gw as default route
     
-    If the dhcp option is enabled, the script adds a dhcp host with ip address
-    10.0.0.254 and the server assigns IPs for hosts.
+    If the dhcp option is enabled, the script adds a dhcp server to the gw node
+    10.0.0.1 and the server assigns IPs for hosts on the subnet.
             
     Max hosts per aggregation switch = 250 because we use the las 2 HEX digits
     of MAC address for easy debug.
@@ -49,7 +51,7 @@ class SimpleISPTopo(Topo):
     
     """
     
-    #setLogLevel('info')
+    setLogLevel('info')
     #setLogLevel('debug')
     
     def __init__(self, linkopts1={}, linkopts2={}, linkopts3={}, hosts=2,
@@ -57,18 +59,18 @@ class SimpleISPTopo(Topo):
         
         """
         
-        linkopts1- link options between core switch and core router
-        linkopts2 - link options between aggregation and core switch
-        linkopts3 - link options between aggregation and hosts
-        hosts - numer of hosts per switch between 1 and 250
+        linkopts1- link options between single witch and core router
+        linkopts2 - link options between single switch and hosts
+        linkopts3 - not used
+        hosts - numer of hosts between 1 and 250
         vlanid - sets vlan id for Mininet hosts
         vlancos - sets cos for vlan tagged traffic on Mininet
         nat - enabled NAT on the gw router
         dhcp - uses DHCP server for addressing instead of Mininet static ip
         
-                          gw    dhcp
-                           |     |                            
-                           c0____|
+                          gw/dhcp
+                           |                            
+                           c0
                   _________|________
                  |         |        |
                  a1       a2       a3
@@ -96,38 +98,32 @@ class SimpleISPTopo(Topo):
         
         # Base MAC address
         baseMac1 = '00:00:01:00:00:'
-        baseMac2 = '00:00:02:00:00:'
-        baseMac3 = '00:00:03:00:00:'
         
-        # Aux var to count DPID
-        dpcount = 1
-        
-        # Add CORE
-        info( '*** Adding Core switch\n' )
-        core = self.addSwitch('c1', dpid=( "%016x" % dpcount ))
-        dpcount += 1
-        
+        # Add Single Switch
+        info( '*** Adding single switch\n' )
+        core = self.addSwitch('c1', dpid=( "%016x" % 1 ))
+ 
         # Add gateway and dhcp
         if dhcp == 'gw':
             dhcpMac=gwMac
             dhcpMac=gwIp
             dhcpBln=True
             info( '*** Adding gateway router node with DHCP server\n' )
-            gw = self.addHost(name='gw', cls=routerCtor, inNamespace=False,        
-                              ip=gwIp, vlanid=vlanid, vlancos=vlancos, nat=nat, 
+            gw = self.addHost(name='gw', cls=routerCtor, inNamespace=False,
+                              ip=gwIp, vlanid=vlanid, vlancos=vlancos, nat=nat,
                               mac=gwMac, dhcp=True)
-            self.addLink(core, gw, **linkopts1)    
-        elif dhcp == 'dhcp':
+            self.addLink(core, gw, **linkopts1)
+        if dhcp == 'dhcp':
             dhcpIp='10.0.0.254'
             dhcpMac='00:00:00:aa:aa:aa'
             dhcpBln=True
             info( '*** Adding gateway router node without DHCP server\n' )
-            gw = self.addHost(name='gw', cls=routerCtor, inNamespace=False,        
-                              ip=gwIp, vlanid=vlanid, vlancos=vlancos, nat=nat, 
+            gw = self.addHost(name='gw', cls=routerCtor, inNamespace=False,
+                              ip=gwIp, vlanid=vlanid, vlancos=vlancos, nat=nat,
                               mac=gwMac, dhcp=False)
-            self.addLink(core, gw, **linkopts1)  
+            self.addLink(core, gw, **linkopts1)
             info( '*** Adding DHCP server node\n' )
-            dhcp = self.addHost(name='dhcp', cls=dhcpCtor, inNamespace=False, 
+            dhcp = self.addHost(name='dhcp', cls=dhcpCtor, inNamespace=False,
                                 dhcpIp=dhcpIp, vlanid=vlanid, vlancos=vlancos,
                                 mac=dhcpMac )
             self.addLink(core, dhcp)
@@ -136,35 +132,11 @@ class SimpleISPTopo(Topo):
             dhcpMac=None
             dhcpBln=False
             info( '*** Adding gateway router node for static addressing\n' )
-            gw = self.addHost(name='gw', cls=routerCtor, inNamespace=False, 
+            gw = self.addHost(name='gw', cls=routerCtor, inNamespace=False,
                               ip=gwIp, vlanid=vlanid, vlancos=vlancos, nat=nat,
                               mac=gwMac, dhcp=False)
             self.addLink(core, gw, **linkopts1)
-        
-        # Add Agreggation
-        info( '*** Adding aggregation switches\n' )
-        a1 = self.addSwitch('a1', dpid=( "%016x" % dpcount ))
-        dpcount += 1
-        self.addLink(core, a1, **linkopts2)
-        a2 = self.addSwitch('a2', dpid=( "%016x" % dpcount ))
-        dpcount += 1
-        self.addLink(core, a2, **linkopts2)
-        a3 = self.addSwitch('a3', dpid=( "%016x" % dpcount ))
-        dpcount += 1
-        self.addLink(core, a3, **linkopts2)
-        
-        # no vlan hosts
-        info( '*** Adding hosts without VLAN\n' )
-        novlan1 = self.addHost(name='nv1', mac='00:00:01:11:11:11',
-                              ip='10.11.11.11')
-        novlan2 = self.addHost(name='nv2', mac='00:00:02:22:22:22',
-                              ip='10.22.22.22')
-        novlan3 = self.addHost(name='nv3', mac='00:00:03:33:33:33',
-                              ip='10.33.33.33')
-        self.addLink(a1, novlan1, **linkopts3)
-        self.addLink(a2, novlan2, **linkopts3)
-        self.addLink(a3, novlan3, **linkopts3)
-        
+         
         if dhcpBln :
             info( '*** Adding hosts with dhcp addressing\n' )
         if nat :
@@ -176,18 +148,18 @@ class SimpleISPTopo(Topo):
         
         for h in irange(2, hosts+1):
             hmac1 = baseMac1 + format(h, 'x')
-            hmac2 = baseMac2 + format(h, 'x')
-            hmac3 = baseMac3 + format(h, 'x')
             hname1 = 'h%s' % str(h)
-            hname2 = 'h%s' % str(hosts + h)
-            hname3 = 'h%s' % str(hosts * 2 + h)
             host1 = self.addHost(cls=hostCtor, name=hname1, mac=hmac1,
-                vlanid=vlanid, vlancos=vlancos, dhcp=dhcpBln)
-            host2 = self.addHost(cls=hostCtor, name=hname2, mac=hmac2,
-                vlanid=vlanid, vlancos=vlancos, dhcp=dhcpBln)
-            host3 = self.addHost(cls=hostCtor, name=hname3, mac=hmac3,
-                vlanid=vlanid, vlancos=vlancos, dhcp=dhcpBln)
+                vlanid=vlanid, vlancos=vlancos, dhcp=dhcp)
             self.addLink(a1, host1, **linkopts3)
-            self.addLink(a2, host2, **linkopts3)
-            self.addLink(a3, host3, **linkopts3)
+        
+        # no vlan hosts
+        if vlanid != 0 :
+            info( '*** Adding hosts without VLAN to verify isolation\n' )
+            novlan1 = self.addHost(name='nv1', mac='00:00:01:11:11:11',
+                                   ip='10.11.11.11')
+            novlan2 = self.addHost(name='nv2', mac='00:00:02:22:22:22',
+                                   ip='10.22.22.22')
+            self.addLink(c1, novlan1, **linkopts3)
+            self.addLink(c1, novlan2, **linkopts3)
 
