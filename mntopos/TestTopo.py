@@ -215,7 +215,7 @@ def main(argv):
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
                waitConnected=True)
     elif args.topo == 'OS' :
-        topo = OneSwitchTopo(linkopts1, linkopts2, linkopts3, fanout=args.hosts,
+        topo = OneSwitchTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
                waitConnected=True)
     
