@@ -25,13 +25,13 @@ import getopt
 import argparse
 import errno
 
-#linkopts1 = {'bw':1000, 'delay':'1ms'}
-#linkopts2 = {'bw':1000, 'delay':'1ms'}
-#linkopts3 = {'bw':100, 'delay':'10ms'}
+linkopts1 = {'bw':1000, 'delay':'1ms'}
+linkopts2 = {'bw':1000, 'delay':'1ms'}
+linkopts3 = {'bw':100, 'delay':'10ms'}
 
-linkopts1 = {}
-linkopts2 = {}
-linkopts3 = {}
+#linkopts1 = {}
+#linkopts2 = {}
+#linkopts3 = {}
 
 # ROUTER VARS
 # TODO move this to args
@@ -138,22 +138,23 @@ def main(argv):
                         choices=irange(0, 7),
                         default=0)
 
-    group1 = parser.add_mutually_exclusive_group()
-    group1.add_argument("--fanout",
-                        type=int,
-                        help="Fanout for DC-like topologies",
-                        default=2)
-    group1.add_argument("--hosts",
+    topoGroup = parser.add_argument_group('topoGroup',
+                        'Arguments that define topology')
+    topoGroup.add_argument("--topo",
+                           type=str,
+                           help="Custom topology to use",
+                           choices=['SISP', 'SDC', 'OS'],
+                           default='SISP')
+    hostGroup = topoGroup.add_mutually_exclusive_group()
+    hostGroup.add_argument("--fanout",
+                           type=int,
+                           help="Fanout for DC-like topologies",
+                           default=2)
+    hostGroup.add_argument("--hosts",
                         type=int,
                         help="R|Number of hosts per aggregation switch for" +
                         " ISP-like topologies",
                         default=2)
-
-    parser.add_argument("--topo",
-                        type=str,
-                        help="Custom topology to use",
-                        choices=['SISP', 'SDC', 'OS'],
-                        default='SISP')
 
     parser.add_argument("--log",
                         type=str,
@@ -164,30 +165,10 @@ def main(argv):
     parser.add_argument("--iface",
                         type=str,
                         help="R|Interface for upstream connectivity on core switch. \n" +
-                        "If this is a physical interface it normally works. If on the \n" +
-                        "other hand this is a virtual interface (like one connecting \n"
-                        "a hypervisor the requirement for it to work is to add this \n" +
-                        "interface to a Linux bridge or similar. Examples known to work:\n\n" +
-                        "Ryu: add Linux Bridge br0 and add eth0 to it. Then use eth0 for \n" +
-                        "this argument\n" +
-                        "ONOS: this controller is more complicated 1) add Linux bridge\n" +
-                        "2) add veth pair veth0 and veth1 2) add eth0 (the interface that \n" +
-                        "communicates with the outside world) and veth0 to the bridge. Then \n" +
-                        "use veth1 as argument to Mininet\n\n" +
-                        "Ryu example:\n" +
-                        "brctl addbr br0\n" +
-                        "brctl addif br0 eth0\n" +
-                        "Make sure eth0 has no IP, if an IP is needed, add it o br0\n\n" +
-                        "ONOS example:\n" +
-                        "brctl addbr br0" +
-                        "brctl addif br0 eth0\n" +
-                        "ip link add veth0 type veth peer name veth1\n" +
-                        "ifconfig veth0 up\n" +
-                        "ifconfig veth1 up\n" +
-                        "ip link set dev veth0 up\n" +
-                        "ip link set dev veth1 up\n" +
-                        "IMPORTANT: if used with the iptables router this is the internet\n" +
-                        "interface.",
+                        "If used in conjunction with router functionality, this is the \n" +
+                        "interface that connects the router with the outside world.\n"
+                        "If used without router, this is the interface that connects the \n" +
+                        "core switch to the outside world.\n" ,
                         default='eth0')
     
     args = parser.parse_args()
@@ -215,7 +196,7 @@ def main(argv):
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
                waitConnected=True)
     elif args.topo == 'OS' :
-        topo = OneSwitchTopo(linkopts1, linkopts2, linkopts3, fanout=args.hosts,
+        topo = OneSwitchTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
                waitConnected=True)
     
@@ -224,30 +205,6 @@ def main(argv):
         setLogLevel('info')
     else :
         setLogLevel('debug')    
-    
-    # CONTROLLER
-    if args.remote :
-        if args.cluster:
-            net = Mininet(topo=topo, link=TCLink, controller=RemoteController)
-            c1 = net.addController( 'ctrl1', ip=args.ip1, port=args.port1 )
-            c2 = net.addController( 'ctrl2', ip=args.ip2, port=args.port2 )
-        else :
-            net = Mininet(topo=topo,
-                  link=TCLink,
-                  controller=lambda a: RemoteController(a, ip=args.ip, port=args.port )
-                  )
-    else:
-        net = Mininet(topo=topo, link=TCLink)
-    
-    # GET THE CORE SWITCH
-    # this is used for upstream and router
-    # TODO, find a better way to define the switch, specify the switch name "c1"
-    # note that core is 0 for OS topo and 3 for all other topos
-    if args.topo == "OS" :
-        switch = net.switches[ 0 ]
-    else :
-        switch = net.switches[ 3 ]
-        debug('*** Switches ' , net.switches, '\n') 
     
     # ROUTER
     if args.router :
@@ -279,12 +236,9 @@ def main(argv):
                          mac=gwMac, dhcp=True, inetIntf=args.iface)
         topo.addLink('c1', gw, **linkopts1)
     else :
-        # THERE IS NO ROUTER
-        # INTERFACE
-        # Add interface for upstream conectivity
-        info( '*** Adding hardware interface', args.iface , 'to switch',
-              switch.name, '\n' )
-        _intf = Intf( args.iface , node=switch )
+        # THERE IS NO ROUTER ADD THE INTERFACE TO CORE
+        # But do it after the net has been created
+        ifaceBln = True
 
     # CONTROLLER
     if args.remote :
@@ -299,6 +253,22 @@ def main(argv):
                   )
     else:
         net = Mininet(topo=topo, link=TCLink)
+
+    # Add the physical to the core switch
+    if ifaceBln :
+        # GET THE CORE SWITCH
+        # this is used for upstream and router
+        # TODO, find a better way to define the switch, specify the switch name "c1"
+        # note that core is 0 for OS topo and 3 for all other topos
+        if args.topo == "OS" :
+            switch = net.switches[ 0 ]
+            debug('*** Switches ' , net.switches, '\n')
+        else :
+            switch = net.switches[ 3 ]
+            debug('*** Switches ' , net.switches, '\n')
+        info( '*** Adding hardware interface', args.iface , 'to switch',
+              switch.name, '\n' )
+        _intf = Intf( args.iface , node=switch )
 
     net.start()
     dumpNodeConnections(net.hosts)
