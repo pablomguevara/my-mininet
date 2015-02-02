@@ -24,14 +24,7 @@ import sys
 import getopt
 import argparse
 import errno
-
-linkopts1 = {'bw':1000, 'delay':'1ms'}
-linkopts2 = {'bw':1000, 'delay':'1ms'}
-linkopts3 = {'bw':100, 'delay':'10ms'}
-
-#linkopts1 = {}
-#linkopts2 = {}
-#linkopts3 = {}
+from string import split
 
 # ROUTER VARS
 # TODO move this to args
@@ -71,6 +64,10 @@ def main(argv):
     # ROUTER
     Optionally, we can install a router on top of the core switch
     Router supports nat and dhcp server each enabled with idividual args
+    
+    # LINK
+    Allows to esily set some link/bw parameters between router <> core sw
+    (linkopts1), core <> agg (linkopts2) and agg <> hots
     '''
     
     parser = argparse.ArgumentParser(description="Wrapper script to initiate " +
@@ -84,92 +81,101 @@ def main(argv):
                         action="store_true")
     
     parser.add_argument("--dhcp",
-                        help="R|Use DHCP Server instead of static ip assignment" +
-                             " for mininet hosts.",
-                        action="store_true")
+        help="R|Use DHCP Server instead of static ip assignment" +
+        " for mininet hosts.",
+        action="store_true")
 
     routerGroup = parser.add_mutually_exclusive_group()
     routerGroup.add_argument("--router",
-                             help="R|Install an iptables based router",
-                             action="store_true")
+        help="R|Install an iptables based router",
+        action="store_true")
     routerGroup.add_argument("--router_nat",
-                             help="R|Install an iptables based router with nat enabled",
-                             action="store_true")
+        help="R|Install an iptables based router with nat enabled",
+        action="store_true")
     routerGroup.add_argument("--router_dhcp",
-                             help="R|Install an iptables based router with dhcp server" +
-                                  " enabled",
-                             action="store_true")
+        help="R|Install an iptables based router with dhcp server" +
+        " enabled",
+        action="store_true")
     routerGroup.add_argument("--router_dhcp_nat",
-                             help="R|Install an iptables based router with nat enabled",
-                             action="store_true")
+        help="R|Install an iptables based router with nat enabled",
+        action="store_true")
 
     controllerGroup = parser.add_argument_group('controllerGroup',
-                        'Arguments for remote controller')
+        'Arguments for remote controller')
     controllerGroup.add_argument("--cluster",
-                        help="Specify if running controllers on cluster (supports 2 controllers only)",
-                        action="store_true")
+        help="Specify if running controllers on cluster (supports 2 controllers only)",
+        action="store_true")
     controllerGroup.add_argument("--ip1",
-                        help="Specify ip address for the first remote controller",
-                        default="127.0.0.1")
+        help="Specify ip address for the first remote controller",
+        default="127.0.0.1")
     controllerGroup.add_argument("--port1",
-                        type=int,
-                        help="Specify tcp port for the first remote controller",
-                        default=6633)
+        type=int,
+        help="Specify tcp port for the first remote controller",
+        default=6633)
     controllerGroup.add_argument("--ip2",
-                        help="Specify ip address for the second remote controller",
-                        default="127.0.0.1")
+        help="Specify ip address for the second remote controller",
+        default="127.0.0.1")
     controllerGroup.add_argument("--port2",
-                        type=int,
-                        help="Specify tcp port for the second remote controller",
-                        default=6633)
+        type=int,
+        help="Specify tcp port for the second remote controller",
+        default=6633)
 
     vlanGroup = parser.add_argument_group('VlanGroup',
-                        'Vlan related arguments')
+        'Vlan related arguments')
     vlanGroup.add_argument("--vlanid",
-                        type=int,
-                        help="VID value for VLAN Tag (allowed values 2-4096)",
-                        #choices=irange(2, 4096),
-                        # dont use choises looks bad
-                        # validate somewhere else
-                        default=0)
+        type=int,
+        help="VID value for VLAN Tag (allowed values 2-4096)",
+        #choices=irange(2, 4096),
+        # dont use choises looks bad
+        # validate somewhere else
+        default=0)
     vlanGroup.add_argument("--vlancos",
-                        type=int,
-                        help="COS value for VLAN Tag",
-                        choices=irange(0, 7),
-                        default=0)
+        type=int,
+        help="COS value for VLAN Tag",
+        choices=irange(0, 7),
+        default=0)
 
     topoGroup = parser.add_argument_group('topoGroup',
-                        'Arguments that define topology')
+        'Arguments that define topology')
     topoGroup.add_argument("--topo",
-                           type=str,
-                           help="Custom topology to use",
-                           choices=['SISP', 'SDC', 'OS'],
-                           default='SISP')
-    hostGroup = topoGroup.add_mutually_exclusive_group()
+        type=str,
+        help="Custom topology to use",
+        choices=['SISP', 'SDC', 'OS'],
+        default='SISP')
+    topoGroup.add_argument("--link",
+        type=str,
+        help="R|Link allows to esily define some link characteristics (delay .\n" +
+        "and bandwidth). Currently supports 3 layes:\n" +
+        "\tlinkopt1: router <--------------> core switch\n" +
+        "\tlinkopt2: core switch <---------> aggregation switch\n" +
+        "\tlinkopt3: aggregation switch <--> hosts\n" +
+        "Sintax should match BW1:D2|BW2:D2|BW3:D3.\n" +
+        "Example: 1000:1|100:1|100:1\n",
+        default = None)
+    hostGroup = parser.add_mutually_exclusive_group()
     hostGroup.add_argument("--fanout",
-                           type=int,
-                           help="Fanout for DC-like topologies",
-                           default=2)
+        type=int,
+        help="Fanout for DC-like topologies",
+        default=2)
     hostGroup.add_argument("--hosts",
-                        type=int,
-                        help="R|Number of hosts per aggregation switch for" +
-                        " ISP-like topologies",
-                        default=2)
+        type=int,
+        help="R|Number of hosts per aggregation switch for ISP-like topologies",
+        default=2)
 
     parser.add_argument("--log",
-                        type=str,
-                        help="Mininet Log level",
-                        choices=['info', 'debug'],
-                        default='info')
+        type=str,
+        help="Mininet Log level",
+        choices=['info', 'debug'],
+        default='info')
 
     parser.add_argument("--iface",
-                        type=str,
-                        help="R|Interface for upstream connectivity on core switch. \n" +
-                        "If used in conjunction with router functionality, this is the \n" +
-                        "interface that connects the router with the outside world.\n"
-                        "If used without router, this is the interface that connects the \n" +
-                        "core switch to the outside world.\n" ,
-                        default='eth0')
+        type=str,
+        help="R|Interface for upstream connectivity on core switch. \n" +
+        "If used in conjunction with router functionality, this is the \n" +
+        "interface that connects the router with the outside world.\n"
+        "If used without router, this is the interface that connects the \n" +
+        "core switch to the outside world.\n" ,
+        default='eth0')
     
     args = parser.parse_args()
 
@@ -185,6 +191,24 @@ def main(argv):
     # router args, then activate dhcp argument for hosts
     if args.router_dhcp or args.router_dhcp_nat :
         args.dhcp = True
+    
+    # LINK OPTIONS
+    if args.link == None :
+        linkopts1 = {}
+        linkopts2 = {}
+        linkopts3 = {}
+    else :
+        # Parse the string
+        # BW1:D1|BW2:D2|BW3:D3
+        # TODO improve this and use regexp
+        # TODO add validation and error handling; catch IndexError
+        linkopts = split(args.link,'|')
+        link1 = split(linkopts[0],':')
+        link2 = split(linkopts[1],':')
+        link3 = split(linkopts[2],':')
+        linkopts1 = { 'bw':link1[0] , 'delay':link1[1] }
+        linkopts2 = { 'bw':link2[0] , 'delay':link2[1] }
+        linkopts3 = { 'bw':link3[0] , 'delay':link3[1] }
      
     # TOPOLOGY 
     if args.topo == 'SISP' :
