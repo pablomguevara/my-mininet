@@ -26,12 +26,6 @@ import argparse
 import errno
 from string import split
 
-# ROUTER VARS
-# TODO move this to args
-# The gw router IP address and mac
-gwMac='00:00:00:aa:aa:aa'
-gwIp='10.255.255.254'
-
 #TODO
 # - cos implementation
 # - Data Center topo with vlan support and all
@@ -53,7 +47,10 @@ def main(argv):
     # VLAN
     vlanid for VLAN topologies, VLAN VID
     vlancos for VLAN topologies, VLAN COS
-    
+    There is no VLAN isolation, ovs by default is a trunk, OF controllers do
+    not by default isolate traffic. That said, if hj pings hi and they have
+    different VLANS, they do not reply. ~ KEEP IT IN MIND ~
+
     # HOST COUNT
     fanout for Data Center Topologies, tree fanout
     hosts for ISP Topologies, hosts per aggregation switch
@@ -152,6 +149,10 @@ def main(argv):
         "Sintax should match BW1:D2|BW2:D2|BW3:D3.\n" +
         "Example: 1000:1|100:1|100:1\n",
         default = None)
+    topoGroup.add_argument("--visolation",
+        help="Include hosts to test VLAN isolation",
+        action="store_true")
+
     hostGroup = parser.add_mutually_exclusive_group()
     hostGroup.add_argument("--fanout",
         type=int,
@@ -179,14 +180,32 @@ def main(argv):
     
     args = parser.parse_args()
 
+    # ROUTER VARS
+    # TODO move this to args
+    # The gw router IP address and mac
+    gwMac='00:00:00:aa:aa:aa'
+    gwIp='10.255.255.254'
+    # Aux var, by default don't add interface to core, unles --iface
+    ifaceBln = False
+
     # PROCESS ARGUMENTS
-    
+     
     # Validate VLAN Vid
     if args.vlanid > 4096 :
-        print "Allowed VID range is 1 - 4096 (vlan 0 is no vlan)"
+        info('*** Allowed VID range is 2 - 4096 (vlan 0 is no vlan)\n')
         parser.print_help()
         exit(errno.EINVAL)
-    
+    elif args.vlanid == 1 :
+        info('*** Allowed VID range is 2 - 4096 (vlan 0 is no vlan). Don\'t ' +
+             'use VID 1 since is the default for most L2 switches.\n')
+        parser.print_help()
+        exit(errno.EINVAL)
+    elif args.vlanid == 0 :
+        # It's a good VID
+        if args.visolation :
+            info('*** It does not make sense to add no vlan hosts since there ' +
+                 'is no vlan, continue anyway\n')
+
     # This is added here to avoid inconsistency. If dhcp option is set on
     # router args, then activate dhcp argument for hosts
     if args.router_dhcp or args.router_dhcp_nat :
@@ -209,20 +228,20 @@ def main(argv):
         linkopts1 = { 'bw':link1[0] , 'delay':link1[1] }
         linkopts2 = { 'bw':link2[0] , 'delay':link2[1] }
         linkopts3 = { 'bw':link3[0] , 'delay':link3[1] }
-     
+    
     # TOPOLOGY 
     if args.topo == 'SISP' :
         topo = SimpleISPTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
-               waitConnected=True)
+               waitConnected=True, visolation=args.visolation)
     elif args.topo == 'SDC' :
         topo = SimpleDCTopo(linkopts1, linkopts2, linkopts3, fanout=args.fanout,
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
-               waitConnected=True)
+               waitConnected=True, visolation=args.visolation)
     elif args.topo == 'OS' :
         topo = OneSwitchTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
-               waitConnected=True)
+               waitConnected=True, visolation=args.visolation)
     
     # LOGGING
     if args.log == "info" :
@@ -247,6 +266,7 @@ def main(argv):
         topo.addLink('c1', gw, **linkopts1)
     elif args.router_dhcp :
         # ROUTER + DHCP
+        # FIXME dhcpd not working on router, why?
         info( '*** Adding gateway router node with DHCP server\n' )
         gw = topo.addHost(cls=routerCtor, inNamespace=False, name='gw',
                          ip=gwIp, vlanid=args.vlanid, vlancos=args.vlancos, nat=False,
@@ -265,6 +285,8 @@ def main(argv):
         ifaceBln = True
 
     # CONTROLLER
+    # TODO find a way to avoid adding the controller when initializing the
+    # Mininet object. This way we end up with c0, ctrl1, ctrl2
     if args.remote :
         if args.cluster:
             net = Mininet(topo=topo, link=TCLink, controller=RemoteController)

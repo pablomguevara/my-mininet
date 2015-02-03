@@ -38,7 +38,7 @@ class OneSwitchTopo(Topo):
     """
     
     def __init__(self, linkopts1={}, linkopts2={}, linkopts3={}, hosts=2,
-        vlanid=0, vlancos=0, nat=False, dhcp=None, **opts):
+        vlanid=0, vlancos=0, nat=False, dhcp=None, visolation=False, **opts):
         
         """
         
@@ -49,6 +49,7 @@ class OneSwitchTopo(Topo):
         vlanid - sets vlan id for Mininet hosts
         vlancos - sets cos for vlan tagged traffic on Mininet
         dhcp - uses DHCP server for addressing instead of Mininet static ip
+        visolation - add a couple of no vlan hosts on each sw
         
                           eth0
                            |                            
@@ -95,7 +96,7 @@ class OneSwitchTopo(Topo):
             self.addLink(core, host1, **linkopts3)
         
         # no vlan hosts
-        if vlanid != 0 :
+        if vlanid != 0 and visolation == True :
             info( '*** Adding hosts without VLAN to verify isolation\n' )
             novlan1 = self.addHost(name='nv1', mac='00:00:01:11:11:11',
                                    ip='10.11.11.11')
