@@ -176,7 +176,7 @@ def main(argv):
         "interface that connects the router with the outside world.\n"
         "If used without router, this is the interface that connects the \n" +
         "core switch to the outside world. If no interface is required, use \n" +
-        "/"no/". Default when this argument is not included is eth0.",
+        "\"no\". Default when this argument is not included is eth0.",
         default='eth0')
     
     args = parser.parse_args()
@@ -282,7 +282,7 @@ def main(argv):
         topo.addLink('c1', gw, **linkopts1)
     else :
         # THERE IS NO ROUTER
-        if args.iface != "no"
+        if args.iface != "no" :
             # and the iface is not "no", so we add interface
             ifaceBln = True
         else :
