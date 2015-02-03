@@ -175,7 +175,8 @@ def main(argv):
         "If used in conjunction with router functionality, this is the \n" +
         "interface that connects the router with the outside world.\n"
         "If used without router, this is the interface that connects the \n" +
-        "core switch to the outside world.\n" ,
+        "core switch to the outside world. If no interface is required, use \n" +
+        "/"no/". Default when this argument is not included is eth0.",
         default='eth0')
     
     args = parser.parse_args()
@@ -250,21 +251,21 @@ def main(argv):
         setLogLevel('debug')    
     
     # ROUTER
-    if args.router :
+    if args.router and args.iface != "no" :
         info( '*** Adding gateway router node for static addressing\n' )
         gw = topo.addHost(cls=routerCtor, inNamespace=False, name='gw',
                          ip=gwIp, vlanid=args.vlanid, vlancos=args.vlancos, nat=False,
                          mac=gwMac, dhcp=False, inetIntf=args.iface)
         info( '*** Adding gateway router link to core switch\n' )
         topo.addLink('c1', gw, **linkopts1)
-    elif args.router_nat :
+    elif args.router_nat and args.iface != "no" :
         # ROUTER + NAT
         info( '*** Adding gateway router node for static addressing and nat\n' )
         gw = topo.addHost(cls=routerCtor, inNamespace=False, name='gw',
                          ip=gwIp, vlanid=args.vlanid, vlancos=args.vlancos, nat=True,
                          mac=gwMac, dhcp=False, inetIntf=args.iface)
         topo.addLink('c1', gw, **linkopts1)
-    elif args.router_dhcp :
+    elif args.router_dhcp and args.iface != "no" :
         # ROUTER + DHCP
         # FIXME dhcpd not working on router, why?
         info( '*** Adding gateway router node with DHCP server\n' )
@@ -272,7 +273,7 @@ def main(argv):
                          ip=gwIp, vlanid=args.vlanid, vlancos=args.vlancos, nat=False,
                          mac=gwMac, dhcp=True, inetIntf=args.iface)
         topo.addLink('c1', gw, **linkopts1)
-    elif args.router_dhcp_nat :
+    elif args.router_dhcp_nat and args.iface != "no" :
         # ROUTER + DHCP + NAT
         info( '*** Adding gateway router node with DHCP server and nat\n' )
         gw = topo.addHost(cls=routerCtor, inNamespace=False, name='gw',
@@ -280,9 +281,13 @@ def main(argv):
                          mac=gwMac, dhcp=True, inetIntf=args.iface)
         topo.addLink('c1', gw, **linkopts1)
     else :
-        # THERE IS NO ROUTER ADD THE INTERFACE TO CORE
-        # But do it after the net has been created
-        ifaceBln = True
+        # THERE IS NO ROUTER
+        if args.iface != "no"
+            # and the iface is not "no", so we add interface
+            ifaceBln = True
+        else :
+            info('*** Continue without adding interface to core or router ***')
+            info('*** Note that Mininet will have no external connectivity ***')
 
     # CONTROLLER
     # TODO find a way to avoid adding the controller when initializing the
