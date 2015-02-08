@@ -286,8 +286,8 @@ def main(argv):
             # and the iface is not "no", so we add interface
             ifaceBln = True
         else :
-            info('*** Continue without adding interface to core or router ***')
-            info('*** Note that Mininet will have no external connectivity ***')
+            info('*** Continue without adding interface to core or router ***\n')
+            info('*** Note that Mininet will have no external connectivity ***\n')
 
     # CONTROLLER
     # TODO find a way to avoid adding the controller when initializing the
@@ -306,6 +306,7 @@ def main(argv):
         net = Mininet(topo=topo, link=TCLink)
 
     # Add the physical to the core switch
+    # TODO add the iface check to see if the if has an IP, if it has one mn fails
     if ifaceBln :
         # GET THE CORE SWITCH
         # this is used for upstream and router
