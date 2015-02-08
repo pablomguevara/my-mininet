@@ -300,7 +300,7 @@ def main(argv):
         else :
             net = Mininet(topo=topo,
                   link=TCLink,
-                  controller=lambda a: RemoteController(a, ip=args.ip, port=args.port )
+                  controller=lambda a: RemoteController(a, ip=args.ip1, port=args.port1 )
                   )
     else:
         net = Mininet(topo=topo, link=TCLink)
