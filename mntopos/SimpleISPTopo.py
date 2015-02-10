@@ -39,7 +39,8 @@ class SimpleISPTopo(Topo):
     """
     
     def __init__(self, linkopts1={}, linkopts2={}, linkopts3={}, hosts=2,
-        vlanid=0, vlancos=0, nat=False, dhcp=False, visolation=False, **opts):
+        vlanid=0, vlancos=0, nat=False, dhcp=False, visolation=False, 
+        gwIp='10.255.255.254', subnet='10.0/8', **opts):
         
         """
         
@@ -112,11 +113,14 @@ class SimpleISPTopo(Topo):
             hname2 = 'h%s' % str(hosts + h)
             hname3 = 'h%s' % str(hosts * 2 + h)
             host1 = self.addHost(cls=hostCtor, name=hname1, mac=hmac1,
-                vlanid=vlanid, vlancos=vlancos, dhcp=dhcp)
+                vlanid=vlanid, vlancos=vlancos, dhcp=dhcp,
+                gwIp=gwIp, subnet=subnet)
             host2 = self.addHost(cls=hostCtor, name=hname2, mac=hmac2,
-                vlanid=vlanid, vlancos=vlancos, dhcp=dhcp)
+                vlanid=vlanid, vlancos=vlancos, dhcp=dhcp,
+                gwIp=gwIp, subnet=subnet)
             host3 = self.addHost(cls=hostCtor, name=hname3, mac=hmac3,
-                vlanid=vlanid, vlancos=vlancos, dhcp=dhcp)
+                vlanid=vlanid, vlancos=vlancos, dhcp=dhcp,
+                gwIp=gwIp, subnet=subnet)
             self.addLink(a1, host1, **linkopts3)
             self.addLink(a2, host2, **linkopts3)
             self.addLink(a3, host3, **linkopts3)
@@ -125,11 +129,11 @@ class SimpleISPTopo(Topo):
         if vlanid != 0 and visolation == True : 
             info( '*** Adding hosts without VLAN\n' )
             novlan1 = self.addHost(name='nv1', mac='00:00:01:11:11:11',
-                ip='10.11.11.11')
+                gwIp=gwIp, subnet=subnet)
             novlan2 = self.addHost(name='nv2', mac='00:00:02:22:22:22',
-                ip='10.22.22.22')
+                gwIp=gwIp, subnet=subnet)
             novlan3 = self.addHost(name='nv3', mac='00:00:03:33:33:33',
-                ip='10.33.33.33')
+                gwIp=gwIp, subnet=subnet)
             self.addLink(a1, novlan1, **linkopts3)
             self.addLink(a2, novlan2, **linkopts3)
             self.addLink(a3, novlan3, **linkopts3)

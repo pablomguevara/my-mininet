@@ -51,9 +51,11 @@ def main(argv):
     not by default isolate traffic. That said, if hj pings hi and they have
     different VLANS, they do not reply. ~ KEEP IT IN MIND ~
 
-    # HOST COUNT
+    # HOST 
     fanout for Data Center Topologies, tree fanout
     hosts for ISP Topologies, hosts per aggregation switch
+    gwIp the Gateway for the Mininet hosts
+    subnet the Mininet subnet
     
     # TOPOLOGY
     CustomTopo select topology to test
@@ -163,6 +165,15 @@ def main(argv):
         help="R|Number of hosts per aggregation switch for ISP-like topologies",
         default=2)
 
+    parser.add_argument("--gwIp",
+        type=str,
+        help="R|Gateway for Mininet hosts (if none set default is 10.255.255.254)",
+        default="10.255.255.254")
+    parser.add_argument("--subnet",
+        type=str,
+        help="R|Subnet to use with Mininet (if none set default is 10.0.0.0/8)",
+        default="10.0/8")
+
     parser.add_argument("--log",
         type=str,
         help="Mininet Log level",
@@ -234,7 +245,8 @@ def main(argv):
     if args.topo == 'SISP' :
         topo = SimpleISPTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
-               waitConnected=True, visolation=args.visolation)
+               waitConnected=True, visolation=args.visolation, gwIp=args.gwIp,
+               subnet=args.subnet)
     elif args.topo == 'SDC' :
         topo = SimpleDCTopo(linkopts1, linkopts2, linkopts3, fanout=args.fanout,
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
@@ -242,7 +254,8 @@ def main(argv):
     elif args.topo == 'OS' :
         topo = OneSwitchTopo(linkopts1, linkopts2, linkopts3, hosts=args.hosts,
                vlanid=args.vlanid, vlancos=args.vlancos, dhcp=args.dhcp,
-               waitConnected=True, visolation=args.visolation)
+               waitConnected=True, visolation=args.visolation, gwIp=args.gwIp,
+               subnet=args.subnet)
     
     # LOGGING
     if args.log == "info" :
